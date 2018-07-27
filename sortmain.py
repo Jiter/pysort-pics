@@ -5,16 +5,24 @@ Created on Thu Jul 19 22:43:56 2018
 
 @author: david
 pysort-pics
+
+Usage:
 """
 
 import os
 import shutil
 import PIL
+import logging
 
-sourcedir = '/Users/david/Documents/Handy/'
+sourcedir = '/Users/david/Documents/Handy'
 outputdir = '/Users/david/Documents/Output/test'
 
+# init Variables
 copycounter = 0
+
+# Set Loglevel to DEBUG.
+logging.root.setLevel(logging.DEBUG)
+
 
 def get_oldest_date(fname):
     src = sourcedir + "/" + fname
@@ -30,9 +38,14 @@ def get_oldest_date(fname):
                 mtime = exif_data[36867]
             if 36868 in exif_data and exif_data[36868] < mtime:  # 36868 = DTDigitized
                 mtime = exif_data[36868]
-            return mtime
+
+            if len(mtime) == 19:
+                return mtime
+            else:
+                logging.warning(fname + " has no correct EXIF-Data.")
+                return -1
     else:
-        print(fname + " has no EXIF-Data, skipping!")
+        logging.warning(fname + ": has no EXIF-Data.")
         return -1
 
 
@@ -52,33 +65,43 @@ def copy_file_to_output(fname, year, month):
 
     shutil.copy2(src, dst)
 
+
 # splits string and gives back year and month
 def str_to_year_month(inp):
     out = inp.split(":")
     return out[0], out[1]
 
+
 # checks wheter it is jpeg or not
 def is_jpg(fname):
     split = fname.split(".")
     if split[1] == "jpg":
+        logging.debug("Is JPEG")
         return 1
     else:
+        logging.debug("Is NOT JPEG")
         return 0
 
 
 # Für jede Datei etwas tun
 for fname in os.listdir(sourcedir):
-    print(fname)
+    logging.info("Found: " + fname)
     if is_jpg(fname) != 1:
         continue
 
     datestr = get_oldest_date(fname)
-    print(datestr)
+
+    if datestr == -1:
+        continue
+
+    logging.debug("Date from Picture is: " + datestr)
     if isinstance(datestr, str):
+        logging.debug(datestr)
         yr, mon = str_to_year_month(datestr)
         copy_file_to_output(fname, yr, mon)
-        copycounter+=1
+        copycounter += 1
 
-print("I have copied and sorted " + str(copycounter) + " Pictures!")
+str_bye = "I have copied and sorted " + str(copycounter) + " Pictures!"
 
-# nach Datum sortieren in Ordner packen mit Jahr und dann Monat
+logging.info(str_bye)
+print(str_bye)
